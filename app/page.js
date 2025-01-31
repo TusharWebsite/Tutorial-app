@@ -1,101 +1,134 @@
-import Image from "next/image";
+"use client";
+import { useState } from "react";
+import axios from "axios";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.js
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [message, setMessage] = useState("");
+  const [chat, setChat] = useState([]);
+  const [character, setCharacter] = useState("Robot");
+  const [loading, setLoading] = useState(false); // Loader state
+  const characters = ["Robot", "Wizard", "Cat", "Alien"];
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const sendMessage = async () => {
+    if (!message.trim()) return;
+
+    setLoading(true); // Show loader
+    const newChat = [...chat, { sender: "user", text: message }];
+    setChat(newChat);
+    setMessage("");
+
+    try {
+      const response = await axios.post("/api/ask", { message, character });
+
+      // Homework Exercise
+      const homework = `Now, try this exercise: Write a Python function that takes a number and returns whether it's even or odd.`;
+
+      setChat([
+        ...newChat,
+        { sender: "AI", text: response.data.reply, homework },
+      ]);
+    } catch (error) {
+      setChat([
+        ...newChat,
+        { sender: "AI", text: "Error: Unable to fetch response." },
+      ]);
+    } finally {
+      setLoading(false); // Hide loader
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-5 min-h-screen bg-blue-100 dark:bg-blue-900 p-4 mt-[-30]">
+      <div className="flex flex-col justify-center items-center ml-[150px]">
+        <h1 className="text-2xl font-bold text-blue-700 dark:text-blue-300 mb-4">
+          AI Python Tutor for Kids
+        </h1>
+        <p className="text-gray-600 dark:text-gray-300 mb-4">
+          Choose your AI tutor character:
+        </p>
+        <div className="flex gap-4 mb-4">
+          {characters.map((char) => (
+            <button
+              key={char}
+              className={`px-4 py-2 rounded-lg ${
+                character === char
+                  ? "bg-blue-500 text-white"
+                  : "bg-white border border-gray-400 dark:bg-gray-800 dark:text-white"
+              }`}
+              onClick={() => setCharacter(char)}
+            >
+              {char}
+            </button>
+          ))}
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+
+        {/* Chat Box */}
+        <div className="bg-white p-4 w-96 h-64 overflow-y-auto border rounded-lg mb-4 dark:bg-gray-800 dark:border-gray-600">
+          {chat.map((c, i) => (
+            <div key={i} className="mb-2">
+              <p
+                className={
+                  c.sender === "user"
+                    ? "text-right text-blue-500 dark:text-blue-400"
+                    : "text-left text-gray-700 dark:text-gray-300"
+                }
+              >
+                <strong>{c.sender === "user" ? "You" : character}:</strong>{" "}
+                {c.text}
+              </p>
+              {c.homework && (
+                <p className="text-left text-red-500 dark:text-red-400 mt-1">
+                  <strong>Homework:</strong> {c.homework}
+                </p>
+              )}
+            </div>
+          ))}
+
+          {/* Loader - Show only when loading */}
+          {loading && (
+            <div className="flex justify-center mt-2">
+              <div className="w-6 h-6 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          )}
+        </div>
+
+        {/* Input & Send Button */}
+        <div className="flex gap-2">
+          <input
+            type="text"
+            placeholder="Ask a Python question..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            className="p-2 border border-gray-400 rounded-lg w-80 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            disabled={loading} // Disable input while loading
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
+          <button
+            onClick={sendMessage}
+            className={`px-4 py-2 rounded-lg ${
+              loading ? "bg-gray-400" : "bg-blue-500"
+            } text-white dark:bg-blue-700`}
+            disabled={loading} // Disable button while loading
+          >
+            Send
+          </button>
+        </div>
+      </div>
+
+      {/* Image Section */}
+      <div className="w-full mt-8 lg:mt-0 lg:w-1/2 flex ml-[150px]">
+        <div className="relative">
+          <img
+            src="https://www.spec-india.com/wp-content/uploads/2022/11/Banner-Python-Developer.png"
+            alt="Illustration"
+            className="w-full h-auto max-w-lg mx-auto drop-shadow-xl"
           />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          <div className="absolute top-[-60] right-0 p-3 bg-white rounded-full shadow-lg dark:bg-gray-800">
+            <span className="text-sm font-semibold text-blue-600">
+              #Trending
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
